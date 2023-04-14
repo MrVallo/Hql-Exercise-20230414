@@ -58,4 +58,55 @@ FROM
 GROUP BY
   create_date
 ```
+# 2.即时订单比例
+
+## 题目需求
+
+订单配送中，如果期望配送日期和下单日期相同，称为即时订单，如果期望配送日期和下单日期不同，称为计划订单。
+请从配送信息表（delivery_info）中求出每个用户的首单（用户的第一个订单）中即时订单的比例，保留两位小数，以小数形式显示。
+
+## 期望结果如下：
+
+| percentage <decimal(16,2)> |
+| :------------------------: |
+|            0.50            |
+
+## 需要用到的表：
+
+**配送信息表：delivery_info**
+
+| delivery_id （运单 ***\*id\**** ） | order_id （订单id） | user_id （用户 id ） | order_date （下单日期） | custom_date （期望配送日期） |
+| ---------------------------------- | ------------------- | -------------------- | ----------------------- | ---------------------------- |
+| **1**                              | 1                   | 101                  | 2021-09-27              | 2021-09-29                   |
+| **2**                              | 2                   | 101                  | 2021-09-28              | 2021-09-28                   |
+| **3**                              | 3                   | 101                  | 2021-09-29              | 2021-09-30                   |
+
+## 代码
+
+```sql
+select
+  (cast((c2 / c1) as DECIMAL(10, 2))) percentage
+from
+  (
+    select
+      count(distinct user_id) c1,
+      count(if (custom_date = f_v, 1, null)) c2
+    from
+      (
+       select distinct
+          user_id,
+          first_value (order_date) over (
+            partition by
+              user_id
+            order by
+              order_date
+          ) f_v,
+          custom_date
+        from
+          delivery_info
+          ) t1
+      ) t2
+  ) t3
+```
+
 
